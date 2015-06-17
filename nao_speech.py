@@ -6,27 +6,12 @@ import subprocess
 
 def analyzeCommand(text):
     global tts
+    global command_dict
 
-    if "open mail" in text:
-        subprocess.call( ["google-chrome", "mail.google.com"] )
-    elif "open google" in text:
-        subprocess.call( ["google-chrome", "www.google.com"] )
-
-    elif "sound down" in text:
-        subprocess.call( ["amixer", "-q", "sset", "Master", "10dB-"] )
-    elif "sound up" in text:
-        subprocess.call( ["amixer", "-q", "sset", "Master", "10dB+"] )
-
-    elif  "music play" in text:
-#        tts.say( "My Lord, I will let the music play" )
-        subprocess.call(["dbus-send", "--print-reply", "--dest=org.mpris.MediaPlayer2.spotify",  "/org/mpris/MediaPlayer2", "org.mpris.MediaPlayer2.Player.Play"])
-    elif "music stop" in text:
-#        tts.say( "My Lord, I will stop the music for you" )
-        subprocess.call(["dbus-send", "--print-reply", "--dest=org.mpris.MediaPlayer2.spotify",  "/org/mpris/MediaPlayer2", "org.mpris.MediaPlayer2.Player.Pause"])
-    elif "music next" in text:
-#        tts.say( "My Lord, I will skip that song" )
-        subprocess.call(["dbus-send", "--print-reply", "--dest=org.mpris.MediaPlayer2.spotify",  "/org/mpris/MediaPlayer2", "org.mpris.MediaPlayer2.Player.Next"])
-
+    command_key = [x.strip() for x in text.split("<...>")][1]
+    if command_dict.has_key(command_key):
+        subprocess.call( command_dict[command_key] )
+        return
 
 class SpeechHandler(ALModule):
     def callback(self, key, value, msg):
@@ -48,8 +33,22 @@ print "using robot ip ", IP
 asr = ALProxy("ALSpeechRecognition", IP, 9559)
 asr.pause(True)
 
-vocabulary = ["music play", "music stop", "music next", "open mail", "open google", "sound down", "sound up"]
-asr.setVocabulary(vocabulary, True)
+command_dict = {"open mail": ["google-chrome", "mail.google.com"],
+                "open google": ["google-chrome", "www.google.com"],
+                "open agenda": ["google-chrome", "www.google.com/calendar"],
+                "open drive": ["google-chrome", "drive.google.com"],
+                "new terminal": ["terminator", "--new-tab"],
+                "music play": ["dbus-send", "--print-reply", "--dest=org.mpris.MediaPlayer2.spotify", "/org/mpris/MediaPlayer2", "org.mpris.MediaPlayer2.Player.PlayPause"],
+                "music pause": ["dbus-send", "--print-reply", "--dest=org.mpris.MediaPlayer2.spotify", "/org/mpris/MediaPlayer2", "org.mpris.MediaPlayer2.Player.PlayPause"],
+                "music stop": ["dbus-send", "--print-reply", "--dest=org.mpris.MediaPlayer2.spotify", "/org/mpris/MediaPlayer2", "org.mpris.MediaPlayer2.Player.Stop"],
+                "music next": ["dbus-send", "--print-reply", "--dest=org.mpris.MediaPlayer2.spotify", "/org/mpris/MediaPlayer2", "org.mpris.MediaPlayer2.Player.Next"],
+                "sound down": ["amixer", "-q", "sset", "Master", "10dB-"],
+                "sound up": ["amixer", "-q", "sset", "Master", "10dB+"],
+                "good morning": ["google-chrome", "www.bonjourmadame.fr/random"],
+                "hello chef": ["google-chrome", "wiki.ros.org"]
+}
+
+asr.setVocabulary(command_dict.keys(), True)
 
 asr.subscribe("NAO_SPEECH")
 asr.pause(False)
